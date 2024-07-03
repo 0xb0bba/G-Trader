@@ -15,7 +15,7 @@ import (
 var ext = g.NewExt(g.ExtInfo{
 	Title:       "G-Trader",
 	Description: "Quickly add lots of an item to the trade",
-	Version:     "0.1.0",
+	Version:     "0.1.1",
 	Author:      "0xb0bba",
 })
 
@@ -87,7 +87,7 @@ func offerItems() {
 		}
 	})
 	// Server doesn't allow adding items faster than every ~500ms
-	for range time.Tick(time.Millisecond * 600) {
+	for range time.Tick(time.Millisecond * 550) {
 		tick()
 	}
 }
@@ -98,7 +98,7 @@ func tick() {
 	if tradingItem == "" || tradingQty >= targetQty {
 		return
 	}
-	found := false
+	found := 0
 	for _, item := range inventoryMgr.Items() {
 		if _, ok := isInTrade[item.ItemId]; ok {
 			continue
@@ -106,13 +106,21 @@ func tick() {
 		if item.Class != tradingItem {
 			continue
 		}
-		ext.Send(out.TRADE_ADDITEM, []byte(fmt.Sprintf("%v", item.ItemId)))
-		ext.Send(out.GETSTRIP, []byte("update")) // Not strictly needed but hides items in hand, looks better for user
-		found = true
+		if found == 0 {
+			ext.Send(out.TRADE_ADDITEM, []byte(fmt.Sprintf("%v", item.ItemId)))
+		}
+		found++
 	}
-	if !found && !didLoop {
-		ext.Send(out.GETSTRIP, []byte("next"))
-		didBrowse = true
+	if found <= 1 {
+		if !didLoop {
+			ext.Send(out.GETSTRIP, []byte("next"))
+			didBrowse = true
+		} else {
+			targetQty = 0
+		}
+	} else {
+		// Update hand so traded items go invisible
+		ext.Send(out.GETSTRIP, []byte("update"))
 	}
 }
 

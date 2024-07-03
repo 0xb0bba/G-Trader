@@ -1,4 +1,4 @@
-module TalkToShout
+module github.com/0xb0bba/G-Trader
 
 go 1.22.4
 
