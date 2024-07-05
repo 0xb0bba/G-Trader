@@ -15,7 +15,7 @@ import (
 var ext = g.NewExt(g.ExtInfo{
 	Title:       "G-Trader",
 	Description: "Quickly add lots of an item to the trade",
-	Version:     "0.1.1",
+	Version:     "0.2.1",
 	Author:      "0xb0bba",
 })
 
