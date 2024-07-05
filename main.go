@@ -29,11 +29,14 @@ var targetQty = 0
 var didLoop = false
 var didBrowse = false
 var startedAt = 0
+var warnTradeDeclined = false
 
 func main() {
 	ext.Intercept(out.CHAT, out.SHOUT).With(interceptChat)
 	ext.Intercept(out.TRADE_ADDITEM).With(interceptTradeAddItem)
+	ext.Intercept(out.TRADE_CLOSE).With(interceptTradeClose)
 	ext.Intercept(in.USER_OBJ).With(handleUserObj)
+	ext.Intercept(in.TRADE_COMPLETED_2).With(handleTradeComplete)
 	ext.Intercept(in.TRADE_CLOSE).With(handleTradeClose)
 	ext.Intercept(in.TRADE_ITEMS).With(handleTradeItems)
 	go offerItems()
@@ -124,11 +127,25 @@ func tick() {
 	}
 }
 
+func interceptTradeClose(e *g.Intercept) {
+	// No need to inform when we are the ones canceling trade
+	warnTradeDeclined = false
+}
+
+func handleTradeComplete(e *g.Intercept) {
+	// This gets sent received before TRADE_CLOSE when both players have accepted
+	warnTradeDeclined = false
+}
+
 func handleTradeClose(e *g.Intercept) {
 	lock.Lock()
 	defer lock.Unlock()
 	tradingItem = ""
 	targetQty = 0
+	if warnTradeDeclined {
+		warnTradeDeclined = false
+		ext.Send(in.SYSTEM_BROADCAST, []byte("Other user cancelled the trade!"))
+	}
 }
 
 func interceptTradeAddItem(e *g.Intercept) {
@@ -158,6 +175,7 @@ func handleTradeItems(e *g.Intercept) {
 	}
 	clear(isInTrade)
 	tradingQty = 0
+	warnTradeDeclined = false
 	// Player who initiated trade comes first
 	for i := 0; i < 2; i++ {
 		user := e.Packet.ReadString()
@@ -171,6 +189,8 @@ func handleTradeItems(e *g.Intercept) {
 					tradingQty++
 				}
 			}
+		} else {
+			warnTradeDeclined = len(inv.Items) > 0
 		}
 	}
 	if tradingQty >= targetQty {
