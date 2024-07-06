@@ -1,6 +1,12 @@
 # G-Trader
-**Made for Habbo: Origins**
 
-Makes adding a lot of items to the trade easier [GoEarth](https://github.com/xabbo/goearth)
+[G-Earth](https://github.com/sirjonasxx/G-Earth) extension for Habbo Origins using the [GoEarth](https://github.com/xabbo/goearth) framework.
 
-Type ```:trade [amount]``` and add an item to the trade. ```[amount]``` of it will be added automatically.
+Adds useful commands for trading and inventory management
+
+## Usage
+```:trade [amount]``` Will add ```[amount]``` of the next item you add to the trade
+
+```:count``` Prints report of all items in your hand
+
+```:countroom``` Prints report all items in the room
