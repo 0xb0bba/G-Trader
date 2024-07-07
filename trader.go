@@ -1,13 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 	g "xabbo.b7c.io/goearth"
 	"xabbo.b7c.io/goearth/shockwave/in"
-	"xabbo.b7c.io/goearth/shockwave/inventory"
 	"xabbo.b7c.io/goearth/shockwave/out"
+	"xabbo.b7c.io/goearth/shockwave/trade"
 )
 
 var isInTrade = make(map[int]bool)
@@ -19,21 +18,27 @@ var didLoop = false
 var didBrowse = false
 var startedAt = 0
 var warnTradeDeclined = false
+var lastTrade trade.Offers
 
 func init() {
+	inventoryMgr.Updated(handleInventoryUpdated)
+	tradeMgr.Updated(handleTradeItems)
+	tradeMgr.Closed(handleTradeClose)
+	tradeMgr.Completed(handleTradeComplete)
+}
+
+func handleInventoryUpdated() {
+	lock.Lock()
+	defer lock.Unlock()
 	// In case we don't have enough furni we need to detect when we run out so we don't just keep looping around
-	inventoryMgr.Updated(func() {
-		lock.Lock()
-		defer lock.Unlock()
-		if didBrowse {
-			for _, item := range inventoryMgr.Items() {
-				if item.Pos == startedAt {
-					// Looped around the whole hand
-					didLoop = true
-				}
+	if didBrowse {
+		for _, item := range inventoryMgr.Items() {
+			if item.Pos == startedAt {
+				// Looped around the whole hand
+				didLoop = true
 			}
 		}
-	})
+	}
 }
 
 func handleTradeCommand(args []string) {
@@ -47,6 +52,25 @@ func handleTradeCommand(args []string) {
 		return
 	}
 	targetQty = qty
+}
+
+func handleViewTradeCommand() {
+	var offers trade.Offers
+	if tradeMgr.Trading {
+		offers = tradeMgr.Offers
+	} else {
+		offers = lastTrade
+	}
+	for _, offer := range offers {
+		if offer.Name != profileMgr.Name {
+			counts := make(map[string]int)
+			for _, item := range offer.Items {
+				name := getFullName(item)
+				counts[name] = counts[name] + 1
+			}
+			printCountResults(counts)
+		}
+	}
 }
 
 func loopTrader() {
@@ -71,7 +95,7 @@ func tickTrader() {
 			continue
 		}
 		if found == 0 {
-			ext.Send(out.TRADE_ADDITEM, []byte(fmt.Sprintf("%v", item.ItemId)))
+			tradeMgr.OfferItem(item)
 		}
 		found++
 	}
@@ -86,7 +110,7 @@ func tickTrader() {
 		}
 	} else {
 		// Update hand so traded items go invisible
-		ext.Send(out.GETSTRIP, []byte("update"))
+		inventoryMgr.Update()
 	}
 }
 
@@ -95,12 +119,13 @@ func interceptTradeClose(e *g.Intercept) {
 	warnTradeDeclined = false
 }
 
-func handleTradeComplete(e *g.Intercept) {
+func handleTradeComplete(args trade.Args) {
 	// This gets sent received before TRADE_CLOSE when both players have accepted
 	warnTradeDeclined = false
+	lastTrade = args.Offers
 }
 
-func handleTradeClose(e *g.Intercept) {
+func handleTradeClose(args trade.Args) {
 	lock.Lock()
 	defer lock.Unlock()
 	tradingItem = ""
@@ -131,7 +156,7 @@ func interceptTradeAddItem(e *g.Intercept) {
 	startedAt = item.Pos
 }
 
-func handleTradeItems(e *g.Intercept) {
+func handleTradeItems(args trade.Args) {
 	lock.Lock()
 	defer lock.Unlock()
 	clear(isInTrade)
@@ -139,11 +164,8 @@ func handleTradeItems(e *g.Intercept) {
 	warnTradeDeclined = false
 	// Player who initiated trade comes first
 	for i := 0; i < 2; i++ {
-		user := e.Packet.ReadString()
-		e.Packet.ReadInt() // Status ?
-		inv := inventory.Inventory{}
-		inv.Parse(e.Packet, &e.Packet.Pos) // List of items in trade
-		if profileMgr.Name == user {
+		inv := args.Offers[i]
+		if profileMgr.Name == inv.Name {
 			for _, item := range inv.Items {
 				isInTrade[item.ItemId] = true
 				if item.Class == tradingItem {

@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 	"xabbo.b7c.io/goearth/shockwave/in"
-	"xabbo.b7c.io/goearth/shockwave/inventory"
 	"xabbo.b7c.io/goearth/shockwave/out"
 )
 
@@ -52,7 +51,7 @@ func tickCounter() {
 	}
 	if !refreshed {
 		refreshed = true
-		ext.Send(out.GETSTRIP, "update")
+		inventoryMgr.Update()
 		return
 	}
 
@@ -62,14 +61,8 @@ func tickCounter() {
 			isDone = true
 			continue
 		}
-		if item.Type == inventory.Floor {
-			name := fmt.Sprintf("%v (%v)", getFurniName(item.Class), item.Class)
-			counts[name] = counts[name] + 1
-		} else {
-			name, key := getPosterName(item.Class, item.Props)
-			name = fmt.Sprintf("%v (%v)", name, key)
-			counts[name] = counts[name] + 1
-		}
+		name := getFullName(item)
+		counts[name] = counts[name] + 1
 		isCounted[item.ItemId] = true
 	}
 	if isDone {

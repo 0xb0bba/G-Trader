@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"xabbo.b7c.io/goearth/shockwave/inventory"
 )
 
 var externalTexts = make(map[string]string)
@@ -34,6 +35,16 @@ func loadExternalTexts(gameHost string) {
 			value := parts[1]
 			externalTexts[key] = value
 		}
+	}
+}
+
+func getFullName(item inventory.Item) string {
+	if item.Type == inventory.Floor {
+		return fmt.Sprintf("%v (%v)", getFurniName(item.Class), item.Class)
+
+	} else {
+		name, key := getPosterName(item.Class, item.Props)
+		return fmt.Sprintf("%v (%v)", name, key)
 	}
 }
 

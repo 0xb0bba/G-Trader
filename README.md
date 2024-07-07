@@ -10,3 +10,5 @@ Adds useful commands for trading and inventory management
 ```:count``` Prints report of all items in your hand
 
 ```:countroom``` Prints report all items in the room
+
+```:viewtrade``` Prints more detailed furni information for the items being offered in the current trade, or the last completed trade
