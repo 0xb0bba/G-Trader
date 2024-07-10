@@ -123,6 +123,7 @@ func handleTradeComplete(args trade.Args) {
 	// This gets sent received before TRADE_CLOSE when both players have accepted
 	warnTradeDeclined = false
 	lastTrade = args.Offers
+	logTrade(formatTrade(lastTrade))
 }
 
 func handleTradeClose(args trade.Args) {

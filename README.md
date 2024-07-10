@@ -12,3 +12,10 @@ Adds useful commands for trading and inventory management
 ```:countroom``` Prints report all items in the room
 
 ```:viewtrade``` Prints more detailed furni information for the items being offered in the current trade, or the last completed trade
+
+## Logging
+Supports basic logging of completed trades to a webhook
+
+Set WEBHOOK_URL in config.txt in the extension directory
+
+Set WEBHOOK_FIELD to the webhooks content field (e.g. ```content``` for Discord, ```text``` for Slack)

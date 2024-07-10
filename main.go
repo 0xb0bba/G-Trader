@@ -14,7 +14,7 @@ import (
 var ext = g.NewExt(g.ExtInfo{
 	Title:       "G-Trader",
 	Description: "Quickly add lots of an item to the trade",
-	Version:     "0.4.0",
+	Version:     "0.5.0",
 	Author:      "0xb0bba",
 })
 
@@ -30,6 +30,7 @@ func main() {
 	ext.Intercept(out.TRADE_CLOSE).With(interceptTradeClose)
 	ext.Connected(func(e g.ConnectArgs) {
 		loadExternalTexts(e.Host)
+		loadConfig()
 	})
 
 	go loopTrader()

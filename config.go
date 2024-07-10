@@ -4,11 +4,22 @@ import (
 	"bufio"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"xabbo.b7c.io/goearth/shockwave/inventory"
 )
 
 var externalTexts = make(map[string]string)
+var config = make(map[string]string)
+
+func loadConfig() {
+	file, err := os.Open("config.txt")
+	if err != nil {
+		fmt.Println("Error loading config", err)
+		return
+	}
+	config = parseConfig(bufio.NewScanner(file))
+}
 
 func loadExternalTexts(gameHost string) {
 	url := "https://origins-gamedata.habbo.com/external_texts/1"
@@ -27,15 +38,21 @@ func loadExternalTexts(gameHost string) {
 	defer resp.Body.Close()
 
 	scanner := bufio.NewScanner(resp.Body)
+	externalTexts = parseConfig(scanner)
+}
+
+func parseConfig(scanner *bufio.Scanner) map[string]string {
+	config := make(map[string]string)
 	for scanner.Scan() {
 		line := scanner.Text()
 		parts := strings.SplitN(line, "=", 2)
 		if len(parts) == 2 {
 			key := parts[0]
 			value := parts[1]
-			externalTexts[key] = value
+			config[key] = value
 		}
 	}
+	return config
 }
 
 func getFullName(item inventory.Item) string {
